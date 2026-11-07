@@ -151,6 +151,12 @@ export class StudentWirdService {
     // Only one week exists (first-ever Saturday of the group) — nothing to compare
     if (!prevWeek) return currentWeek ?? null;
 
+    // The previous week must be the one right before (7 days earlier). After a group
+    // pause there is a gap, and the old paused week must not hold the learner back.
+    const prevStartStr = dateToISODateOnly(prevWeek.startDate);
+    const currentStartStr = dateToISODateOnly(currentWeek.startDate);
+    if (prevStartStr !== addDaysToDateStr(currentStartStr, -7)) return currentWeek;
+
     // Check if the previous week has any day with no DB record for this student
     const prevWirds = await this.db.studentWird.findMany({
       where: { weekId: prevWeek.id, studentId },
@@ -159,7 +165,6 @@ export class StudentWirdService {
 
     const recordedDays = new Set(prevWirds.map((w) => w.dayNumber));
     const joinedAtStr = dateToISODateOnly(memberJoinedAt);
-    const prevStartStr = dateToISODateOnly(prevWeek.startDate);
 
     const hasMissingRecord = DISPLAY_DAY_ORDER.some((dayNum) => {
       const dayDate = addDaysToDateStr(prevStartStr, (dayNum + 1) % 7);

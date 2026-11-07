@@ -54,6 +54,8 @@ apps/backend/
     utils/
       test-app.ts             ← createTestApp()
       auth.ts                 ← authedRequest() / unauthedRequest()
+      clock.ts                ← setToday() / restoreClock() / day()
+      group.ts                ← setGroupStatus() / pauseAndResume() / getWeeks()
     [module]/[feature].e2e-spec.ts
 ```
 
@@ -94,5 +96,7 @@ describe('Group status (e2e)', () => {
 - Cover auth (401), roles (403), validation (400) and the business rule itself.
 - Create the data a test needs inside the test, with unique names (`randomUUID()`); don't depend on other files' data.
 - Don't change seeded rows other tests rely on — create your own group/learners instead.
-- Fix the clock with `vi.useFakeTimers({ toFake: ['Date'] })` when a rule depends on "today"; fake only `Date` so the DB driver keeps working.
+- When a rule depends on "today", use `setToday('2026-01-13')` (fakes only `Date`, so the DB driver keeps working) and call `restoreClock()` in `afterEach`.
+- Build data with seed helpers from `src/seed/` (e.g. `seedGroupWithWeeks`) so dev and tests share them.
+- Pause/resume over any duration: `pauseAndResume(admin, groupId, { pausedOn, resumedOn })`.
 - Pure functions (e.g. date utils) get **unit** tests, not e2e tests.

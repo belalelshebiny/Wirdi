@@ -1,8 +1,12 @@
 import { PrismaClient, ReadSourceType, UserRole } from 'generated/prisma/client';
+import { createWeek } from './group.seed';
 import {
   addDaysToDateStr,
   combineDateTime,
+  dateOnlyToUTC,
   dateToISODateOnly,
+  getWeekEndDate,
+  getWeekStartDate,
   type ISODateOnlyString,
   type TimeMinutes,
 } from '@wirdi/shared';
@@ -106,31 +110,14 @@ function recordOn(
 }
 
 function getWeekAnchors() {
-  const today = new Date();
-  const dayOfWeek = today.getUTCDay();
-  const daysToSubtract = dayOfWeek === 6 ? 0 : (dayOfWeek + 1) % 7;
-
-  const currentSaturday = new Date(today);
-  currentSaturday.setUTCDate(today.getUTCDate() - daysToSubtract);
-  currentSaturday.setUTCHours(0, 0, 0, 0);
-
-  const currentSaturdayStr = dateToISODateOnly(currentSaturday);
-  const currentFridayStr = addDaysToDateStr(currentSaturdayStr, 6);
-
-  const previousSaturday = new Date(currentSaturday);
-  previousSaturday.setUTCDate(previousSaturday.getUTCDate() - 7);
-  previousSaturday.setUTCHours(0, 0, 0, 0);
-
-  const previousSaturdayStr = dateToISODateOnly(previousSaturday);
-  const previousFridayStr = addDaysToDateStr(previousSaturdayStr, 6);
+  const currentSaturdayStr = getWeekStartDate(dateToISODateOnly(new Date()));
+  const previousSaturdayStr = addDaysToDateStr(currentSaturdayStr, -7);
 
   return {
-    currentSaturday,
+    currentSaturday: dateOnlyToUTC(currentSaturdayStr),
     currentSaturdayStr,
-    currentFridayStr,
-    previousSaturday,
+    currentEndStr: getWeekEndDate(currentSaturdayStr),
     previousSaturdayStr,
-    previousFridayStr,
   };
 }
 
@@ -340,35 +327,6 @@ async function loadScenarioUsers(prisma: PrismaClient): Promise<PhoneMap> {
   return byPhone;
 }
 
-async function createWeek(
-  prisma: PrismaClient,
-  input: {
-    groupId: string;
-    weekNumber: number;
-    startDate: Date;
-    endDateStr: string;
-    scheduleName: string;
-    imageUrl: string;
-    imagekitFileId: string;
-  }
-) {
-  return prisma.week.create({
-    data: {
-      groupId: input.groupId,
-      weekNumber: input.weekNumber,
-      startDate: input.startDate,
-      endDate: new Date(input.endDateStr),
-      scheduleImage: {
-        create: {
-          name: input.scheduleName,
-          imageUrl: input.imageUrl,
-          imagekitFileId: input.imagekitFileId,
-        },
-      },
-    },
-  });
-}
-
 async function createMemberships(
   prisma: PrismaClient,
   input: {
@@ -557,31 +515,34 @@ export async function seedWirdTracking(prisma: PrismaClient) {
   const currentWeek = await createWeek(prisma, {
     groupId: mainGroup.id,
     weekNumber: 1,
-    startDate: anchors.currentSaturday,
-    endDateStr: anchors.currentFridayStr,
-    scheduleName: 'جدول الأسبوع الحالي',
-    imageUrl: 'https://example.com/schedule-current.jpg',
-    imagekitFileId: 'schedule-current',
+    startDate: anchors.currentSaturdayStr,
+    scheduleImage: {
+      name: 'جدول الأسبوع الحالي',
+      imageUrl: 'https://example.com/schedule-current.jpg',
+      imagekitFileId: 'schedule-current',
+    },
   });
 
   const previousWeek = await createWeek(prisma, {
     groupId: mainGroup.id,
     weekNumber: 0,
-    startDate: anchors.previousSaturday,
-    endDateStr: anchors.previousFridayStr,
-    scheduleName: 'جدول الأسبوع السابق',
-    imageUrl: 'https://example.com/schedule-previous.jpg',
-    imagekitFileId: 'schedule-previous',
+    startDate: anchors.previousSaturdayStr,
+    scheduleImage: {
+      name: 'جدول الأسبوع السابق',
+      imageUrl: 'https://example.com/schedule-previous.jpg',
+      imagekitFileId: 'schedule-previous',
+    },
   });
 
   const historicalWeek = await createWeek(prisma, {
     groupId: historicalGroup.id,
     weekNumber: 1,
-    startDate: anchors.currentSaturday,
-    endDateStr: anchors.currentFridayStr,
-    scheduleName: 'جدول مجموعة سابقة',
-    imageUrl: 'https://example.com/schedule-history.jpg',
-    imagekitFileId: 'schedule-history',
+    startDate: anchors.currentSaturdayStr,
+    scheduleImage: {
+      name: 'جدول مجموعة سابقة',
+      imageUrl: 'https://example.com/schedule-history.jpg',
+      imagekitFileId: 'schedule-history',
+    },
   });
 
   await createMemberships(prisma, {
@@ -880,6 +841,6 @@ export async function seedWirdTracking(prisma: PrismaClient) {
   console.log('✅ Wird tracking scenarios seeded');
   console.log(`📊 Main group: ${mainGroup.name}`);
   console.log(`📊 Historical group: ${historicalGroup.name}`);
-  console.log(`📅 Current week: ${anchors.currentSaturdayStr} -> ${anchors.currentFridayStr}`);
+  console.log(`📅 Current week: ${anchors.currentSaturdayStr} -> ${anchors.currentEndStr}`);
   console.log('🧪 Covered users: admin, moderator, student1 .. student25');
 }

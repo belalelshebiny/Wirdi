@@ -45,6 +45,7 @@ export default function LearnerGroupDetailView({ groupId }: Props) {
       <div className='space-y-6'>
         <GroupInfoCard
           group={group}
+          userTimezone={vm.userTimezone}
           isEditable={false}
           onEditGroup={() => {}}
           onOpenSchedule={() => {}}
@@ -78,6 +79,7 @@ export default function LearnerGroupDetailView({ groupId }: Props) {
     <div className='space-y-6'>
       <GroupInfoCard
         group={group}
+        userTimezone={vm.userTimezone}
         isEditable={false}
         onEditGroup={() => {}}
         onOpenSchedule={() => {}}

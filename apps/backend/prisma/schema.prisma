@@ -63,6 +63,7 @@ model Group {
   awrad       Json // array ["wird1", "wird2", ...]
   moderatorId String?     @map("moderator_id")
   status      GroupStatus @default(ACTIVE)
+  inactiveAt  DateTime?   @map("inactive_at")
   description String?     @db.VarChar(500)
 
   moderator User?         @relation("GroupModerator", fields: [moderatorId], references: [id], onDelete: SetNull)

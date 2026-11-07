@@ -197,12 +197,35 @@ export function getNextSaturdayFrom(saturdayDateStr: ISODateOnlyString): ISODate
   return addDaysToDateStr(saturdayDateStr, 7);
 }
 
+/** Returns dateStr if it is a Saturday, otherwise the next Saturday. UTC-based. */
+export function getUpcomingSaturdayFrom(dateStr: ISODateOnlyString): ISODateOnlyString {
+  const date = DateTime.fromISO(dateStr, { zone: 'utc' });
+  // Luxon weekday: Mon=1 … Sat=6 … Sun=7
+  const daysUntilSaturday = (6 - date.weekday + 7) % 7;
+  return addDaysToDateStr(dateStr, daysUntilSaturday);
+}
+
+/** The Saturday that starts the week containing dateStr (dateStr itself if it is a Saturday). */
+export function getWeekStartDate(dateStr: ISODateOnlyString): ISODateOnlyString {
+  return getUpcomingSaturdayFrom(addDaysToDateStr(dateStr, -6));
+}
+
 /** Returns today if today is Saturday, otherwise the next Saturday. UTC-based. */
 export function getUpcomingSaturday(): ISODateOnlyString {
-  const today = DateTime.utc().startOf('day');
-  // Luxon weekday: Mon=1 … Sat=6 … Sun=7
-  const daysUntilSaturday = (6 - today.weekday + 7) % 7;
-  return today.plus({ days: daysUntilSaturday }).toFormat('yyyy-MM-dd') as ISODateOnlyString;
+  return getUpcomingSaturdayFrom(dateToISODateOnly(new Date()));
+}
+
+/** A week runs Saturday → Thursday. */
+export function getWeekEndDate(startDateStr: ISODateOnlyString): ISODateOnlyString {
+  return addDaysToDateStr(startDateStr, 5);
+}
+
+/** Whole days from `fromStr` to `toStr` (negative when `toStr` is earlier). */
+export function diffInDays(fromStr: ISODateOnlyString, toStr: ISODateOnlyString): number {
+  return DateTime.fromISO(toStr, { zone: 'utc' }).diff(
+    DateTime.fromISO(fromStr, { zone: 'utc' }),
+    'days'
+  ).days;
 }
 
 export function isDateTodayOrFuture(dateStr: ISODateOnlyString): boolean {

@@ -2,14 +2,21 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useApiQuery } from '@/lib/hooks/useApiQuery';
+import { useApp } from '@/contexts/AppContext';
 import { useApiMutation } from '@/lib/hooks/useApiMutation';
 import { queryClient, queryKeys } from '@/lib/query-client';
 import { userService } from '@/modules/users/services/user.service';
 import { groupService } from '../services/group.service';
-import type { GroupDto, UpdateGroupDto, StaffUserDto } from '@wirdi/shared';
+import {
+  DEFAULT_TIMEZONE,
+  type GroupDto,
+  type UpdateGroupDto,
+  type StaffUserDto,
+} from '@wirdi/shared';
 
 export function useGroupDetailViewModel(groupId: string) {
   const navigate = useNavigate();
+  const { user } = useApp();
   const isEditable = true;
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,6 +63,7 @@ export function useGroupDetailViewModel(groupId: string) {
   return {
     group,
     isEditable,
+    userTimezone: user?.timezone ?? DEFAULT_TIMEZONE,
     isLoading: groupQuery.isLoading,
     queryError: groupQuery.error?.message ?? null,
     // Staff

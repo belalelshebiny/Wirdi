@@ -4,10 +4,12 @@ import { Typography } from '@/components/ui/typography';
 import { Badge } from '@/components/ui/badge';
 import { TimezoneDisplay } from '@/components/ui/timezone-display';
 import { GroupStatusBadge } from '../atoms/GroupStatusBadge';
-import type { GroupDto } from '@wirdi/shared';
+import { formatDate, type GroupDto, type TimeZoneType } from '@wirdi/shared';
 
 type GroupInfoCardProps = {
   group: GroupDto;
+  /** Dates are shown in the viewer's timezone. */
+  userTimezone: TimeZoneType;
   isEditable: boolean;
   onEditGroup: () => void;
   onOpenSchedule: () => void;
@@ -17,6 +19,7 @@ type GroupInfoCardProps = {
 
 export function GroupInfoCard({
   group,
+  userTimezone,
   isEditable,
   onEditGroup,
   onOpenSchedule,
@@ -35,6 +38,16 @@ export function GroupInfoCard({
               {group.name}
             </Typography>
             <GroupStatusBadge status={group.status} />
+            {group.status === 'INACTIVE' && group.inactiveAt && (
+              <Typography size='sm' className='text-muted-foreground'>
+                متوقفة منذ{' '}
+                {formatDate({
+                  date: group.inactiveAt,
+                  token: 'dd/MM/yyyy',
+                  timezone: userTimezone,
+                })}
+              </Typography>
+            )}
           </div>
           {group.moderatorName && (
             <Typography size='sm' className='text-muted-foreground'>

@@ -75,6 +75,7 @@ export default function AdminGroupDetailView({ groupId }: Props) {
     <div className='space-y-6'>
       <GroupInfoCard
         group={vm.group}
+        userTimezone={vm.userTimezone}
         isEditable={vm.isEditable}
         onEditGroup={vm.openEditModal}
         onOpenSchedule={vm.openScheduleModal}

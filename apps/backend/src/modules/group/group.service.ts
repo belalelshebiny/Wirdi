@@ -16,14 +16,17 @@ import {
   WeekDto,
   AwradType,
   isSaturday,
-  addDaysToDateStr,
+  getWeekEndDate,
+  dateToISODateOnly,
   getNextSaturdayFrom,
   getUpcomingSaturday,
   isDateTodayOrFuture,
   dateOnlyToUTC,
-  formatDate,
 } from '@wirdi/shared';
 import type { User as PrismaUser } from 'generated/prisma/client';
+import { planWeekShift } from './group-week-shift.util';
+
+type Tx = Parameters<Parameters<DatabaseService['$transaction']>[0]>[0];
 
 @Injectable()
 export class GroupService {
@@ -88,6 +91,7 @@ export class GroupService {
       data: {
         name: dto.name,
         status: dto.status ?? 'ACTIVE',
+        inactiveAt: dto.status === 'INACTIVE' ? new Date() : null,
         description: dto.description,
         awrad: dto.awrad,
         moderatorId: dto.moderatorId,
@@ -101,19 +105,34 @@ export class GroupService {
   }
 
   async updateGroup(id: string, dto: UpdateGroupDto): Promise<GroupDto> {
-    const group = await this.db.group.update({
-      where: { id },
-      data: {
-        ...(dto.name && { name: dto.name }),
-        ...(dto.status && { status: dto.status }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.awrad && { awrad: dto.awrad }),
-        ...(dto.moderatorId !== undefined && { moderatorId: dto.moderatorId || null }),
-      },
-      include: {
-        moderator: { select: { name: true } },
-        _count: { select: { members: { where: { removedAt: null } }, weeks: true } },
-      },
+    const group = await this.db.$transaction(async (tx) => {
+      const current = await tx.group.findUniqueOrThrow({
+        where: { id },
+        select: { status: true, inactiveAt: true },
+      });
+      const isPausing = current.status === 'ACTIVE' && dto.status === 'INACTIVE';
+      const isResuming = current.status === 'INACTIVE' && dto.status === 'ACTIVE';
+
+      if (isResuming && current.inactiveAt) {
+        await this.shiftWeeksAfterPause(id, current.inactiveAt, tx);
+      }
+
+      return tx.group.update({
+        where: { id },
+        data: {
+          ...(dto.name && { name: dto.name }),
+          ...(dto.status && { status: dto.status }),
+          ...(isPausing && { inactiveAt: new Date() }),
+          ...(isResuming && { inactiveAt: null }),
+          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.awrad && { awrad: dto.awrad }),
+          ...(dto.moderatorId !== undefined && { moderatorId: dto.moderatorId || null }),
+        },
+        include: {
+          moderator: { select: { name: true } },
+          _count: { select: { members: { where: { removedAt: null } }, weeks: true } },
+        },
+      });
     });
     return this.toGroupDto(group);
   }
@@ -324,6 +343,26 @@ export class GroupService {
 
   // ─── Private helpers ────────────────────────────────────────────────────────
 
+  /** Moves the weeks after the paused week so the next one starts on the upcoming Saturday. */
+  private async shiftWeeksAfterPause(groupId: string, inactiveAt: Date, tx: Tx) {
+    const weeks = await tx.week.findMany({
+      where: { groupId },
+      select: { id: true, startDate: true },
+    });
+    const shifted = planWeekShift(
+      weeks.map((w) => ({ id: w.id, startDate: dateToISODateOnly(w.startDate) })),
+      dateToISODateOnly(inactiveAt),
+      dateToISODateOnly(new Date())
+    );
+    // Sequential on purpose: latest-first order keeps @@unique([groupId, startDate]) satisfied.
+    for (const week of shifted) {
+      await tx.week.update({
+        where: { id: week.id },
+        data: { startDate: dateOnlyToUTC(week.startDate), endDate: dateOnlyToUTC(week.endDate) },
+      });
+    }
+  }
+
   /**
    * Resolves week number + start/end dates for a new schedule image upload.
    * - First week: requires saturdayDate (validated as Saturday).
@@ -332,7 +371,7 @@ export class GroupService {
   private async resolveWeekForGroup(
     groupId: string,
     saturdayDate: ISODateOnlyString | undefined,
-    tx: Parameters<Parameters<DatabaseService['$transaction']>[0]>[0]
+    tx: Tx
   ): Promise<{ weekNumber: number; startDate: Date; endDate: Date }> {
     const lastWeek = await tx.week.findFirst({
       where: { groupId },
@@ -343,7 +382,7 @@ export class GroupService {
       if (!saturdayDate) throw new BadRequestException('تاريخ السبت مطلوب للأسبوع الأول');
       if (!isSaturday(saturdayDate))
         throw new BadRequestException('يجب أن يكون تاريخ البداية يوم السبت');
-      const endDateStr = addDaysToDateStr(saturdayDate, 5);
+      const endDateStr = getWeekEndDate(saturdayDate);
       return {
         weekNumber: 1,
         startDate: dateOnlyToUTC(saturdayDate),
@@ -351,18 +390,14 @@ export class GroupService {
       };
     }
 
-    const lastStartStr = formatDate({
-      date: lastWeek.startDate,
-      token: 'yyyy-MM-dd',
-      timezone: 'utc',
-    }) as ISODateOnlyString;
+    const lastStartStr = dateToISODateOnly(lastWeek.startDate);
     const sequentialNext = getNextSaturdayFrom(lastStartStr);
     // Use the sequential next Saturday if it hasn't passed yet;
     // otherwise fall back to the nearest upcoming Saturday from today.
     const nextStartStr = isDateTodayOrFuture(sequentialNext)
       ? sequentialNext
       : getUpcomingSaturday();
-    const nextEndStr = addDaysToDateStr(nextStartStr, 5);
+    const nextEndStr = getWeekEndDate(nextStartStr);
 
     return {
       weekNumber: lastWeek.weekNumber + 1,
@@ -376,6 +411,7 @@ export class GroupService {
     name: string;
     timezone: string;
     status: string;
+    inactiveAt: Date | null;
     description: string | null;
     awrad: unknown;
     moderatorId: string | null;
@@ -388,6 +424,7 @@ export class GroupService {
       name: g.name,
       timezone: g.timezone as TimeZoneType,
       status: g.status as GroupDto['status'],
+      inactiveAt: (g.inactiveAt?.toISOString() ?? null) as GroupDto['inactiveAt'],
       description: g.description ?? undefined,
       awrad: (g.awrad as AwradType[]) ?? [],
       moderatorId: g.moderatorId ?? undefined,
@@ -417,16 +454,8 @@ export class GroupService {
       id: w.id,
       groupId: w.groupId,
       weekNumber: w.weekNumber,
-      startDate: formatDate({
-        date: w.startDate,
-        token: 'yyyy-MM-dd',
-        timezone: 'utc',
-      }) as ISODateOnlyString,
-      endDate: formatDate({
-        date: w.endDate,
-        token: 'yyyy-MM-dd',
-        timezone: 'utc',
-      }) as ISODateOnlyString,
+      startDate: dateToISODateOnly(w.startDate),
+      endDate: dateToISODateOnly(w.endDate),
       createdAt: w.createdAt.toISOString() as WeekDto['createdAt'],
       scheduleImage: {
         id: w.scheduleImage.id,

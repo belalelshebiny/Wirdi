@@ -17,6 +17,8 @@ export interface GroupDto {
   name: string;
   timezone: TimeZoneType;
   status: GroupStatus;
+  /** When the group was paused; null while active. */
+  inactiveAt: ISODateString | null;
   description?: string;
   awrad: AwradType[];
   moderatorId?: string;
