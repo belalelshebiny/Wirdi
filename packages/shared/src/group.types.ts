@@ -176,10 +176,7 @@ export interface CreateExcuseDto {
 /** Values stored in the DB — what was actually recorded for a day. */
 export type RecordedWirdStatus = 'ATTENDED' | 'MISSED' | 'LATE';
 export type ReadSourceType =
-  | 'DEFAULT_GROUP_MATE'
-  | 'DIFFERENT_GROUP_MATE'
-  | 'OUTSIDE_GROUP'
-  | 'MANUAL';
+  'DEFAULT_GROUP_MATE' | 'DIFFERENT_GROUP_MATE' | 'OUTSIDE_GROUP' | 'MANUAL';
 
 /**
  * Full display state for a day cell.

@@ -36,10 +36,7 @@ const DISPLAY_DAY_ORDER = [6, 0, 1, 2, 3, 4] as const;
 const FOUR_PM: TimeMinutes = (16 * 60) as TimeMinutes;
 
 type LocalReadSourceType =
-  | 'DEFAULT_GROUP_MATE'
-  | 'DIFFERENT_GROUP_MATE'
-  | 'OUTSIDE_GROUP'
-  | 'MANUAL';
+  'DEFAULT_GROUP_MATE' | 'DIFFERENT_GROUP_MATE' | 'OUTSIDE_GROUP' | 'MANUAL';
 
 type WirdRecord = {
   dayNumber: number;

@@ -48,14 +48,11 @@ export function useLearnersViewModel() {
   const sortOrder = activeSort ? (activeSort.desc ? 'desc' : 'asc') : undefined;
 
   const timezoneFilter = columnFilters.find((f) => f.id === 'timezone')?.value as
-    | TimeZoneType
-    | undefined;
+    TimeZoneType | undefined;
   const recitationFilter = columnFilters.find((f) => f.id === 'recitation')?.value as
-    | RecitationType
-    | undefined;
+    RecitationType | undefined;
   const platformFilter = columnFilters.find((f) => f.id === 'platform')?.value as
-    | PlatformType
-    | undefined;
+    PlatformType | undefined;
   const groupIdFilter = columnFilters.find((f) => f.id === 'groups')?.value as string | undefined;
 
   const groupNamesQuery = useApiQuery({

@@ -1,7 +1,5 @@
 export type ClientErrorCaptureChannel =
-  | 'router_error_element'
-  | 'window_error'
-  | 'unhandled_rejection';
+  'router_error_element' | 'window_error' | 'unhandled_rejection';
 
 export type ClientErrorMetadata = Record<string, string | number | boolean | null>;
 

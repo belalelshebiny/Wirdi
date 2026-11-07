@@ -16,12 +16,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky || true",
-    "test": "turbo test"
+    "test": "turbo test",
+    "test:e2e": "pnpm --filter @wirdi/backend test:e2e",
+    "db:seed": "pnpm --filter @wirdi/backend db:seed",
+    "db:reset:test": "pnpm --filter @wirdi/backend db:reset:test"
   },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.4.2",
+    "prettier": "^3.9.10",
     "turbo": "^2.4.4"
   }
 }

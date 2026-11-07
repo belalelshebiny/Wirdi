@@ -47,7 +47,7 @@ wirdi/
 
 ### Prerequisites
 
-- Node.js 20+, pnpm 9+, Docker
+- Node.js 22+ (tests need it; production runs on 20), pnpm 9+, Docker
 
 ### 1. Clone & install
 
@@ -75,9 +75,8 @@ JWT_SECRET="your-secret"
 ### 4. Run migrations & seed
 
 ```bash
-cd apps/backend
-pnpm prisma:migrate:dev
-pnpm tsx src/seed/seed.ts
+pnpm --filter @wirdi/backend prisma:migrate:dev
+pnpm db:seed
 ```
 
 ### 5. Start dev servers
@@ -94,20 +93,28 @@ pnpm dev
 
 ## 🔑 Seeded Accounts
 
-| Role      | Username  | Password |
-| --------- | --------- | -------- |
-| Admin     | admin     | 12345678 |
-| Moderator | moderator | 12345678 |
-| Student   | student   | 12345678 |
+Login is by phone. All accounts use the password `12345678` (`SEED_LOGINS` in `apps/backend/src/seed/seed.constants.ts`).
+
+| Role      | Phone         |
+| --------- | ------------- |
+| Admin     | +201507770400 |
+| Moderator | +966500000001 |
+| Student   | +966500000004 |
 
 ---
 
 ## 📦 Scripts
 
-| Command          | Description                          |
-| ---------------- | ------------------------------------ |
-| `pnpm dev`       | Start all apps in watch mode         |
-| `pnpm build`     | Build all apps                       |
-| `pnpm typecheck` | TypeScript check across all packages |
-| `pnpm lint`      | Lint all packages                    |
-| `pnpm format`    | Format with Prettier                 |
+| Command              | Description                          |
+| -------------------- | ------------------------------------ |
+| `pnpm dev`           | Start all apps in watch mode         |
+| `pnpm build`         | Build all apps                       |
+| `pnpm typecheck`     | TypeScript check across all packages |
+| `pnpm lint`          | Lint all packages                    |
+| `pnpm format`        | Format with Prettier                 |
+| `pnpm test`          | Unit tests in all packages           |
+| `pnpm test:e2e`      | Backend e2e tests (`wirdi_test` DB)  |
+| `pnpm db:seed`       | Seed the dev database                |
+| `pnpm db:reset:test` | Rebuild the test database            |
+
+Testing setup and conventions: [.github/instructions/testing.instructions.md](.github/instructions/testing.instructions.md)
