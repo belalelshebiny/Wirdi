@@ -43,7 +43,7 @@ export class NotificationService {
         const dto: NotificationDto = {
           id: notification.id,
           recipientId: notification.recipientId,
-          type: notification.type as NotificationType,
+          type: notification.type,
           payload: notification.payload as NotificationDto['payload'],
           readAt: notification.readAt ? notification.readAt.toISOString() : null,
           createdAt: notification.createdAt.toISOString(),
@@ -91,7 +91,7 @@ export class NotificationService {
         data: items.map((n) => ({
           id: n.id,
           recipientId: n.recipientId,
-          type: n.type as NotificationType,
+          type: n.type,
           payload: n.payload as NotificationPayloadMap[NotificationType],
           readAt: n.readAt ? n.readAt.toISOString() : null,
           createdAt: n.createdAt.toISOString(),

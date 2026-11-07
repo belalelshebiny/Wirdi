@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { NotificationType, SendNotificationDto } from '@wirdi/shared';
 import { INotificationChannel } from '../notification-channel.interface';
 import { DatabaseService } from '../../database/database.service';
-import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class InAppNotificationChannel implements INotificationChannel {
@@ -13,7 +12,7 @@ export class InAppNotificationChannel implements INotificationChannel {
       data: {
         recipientId: dto.recipientId,
         type: dto.type,
-        payload: dto.payload as Prisma.InputJsonValue,
+        payload: dto.payload,
       },
     });
   }

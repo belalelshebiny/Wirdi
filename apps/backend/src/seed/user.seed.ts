@@ -2,6 +2,7 @@ import { PrismaClient } from 'generated/prisma/client';
 import { faker, fakerAR } from '@faker-js/faker';
 import argon from 'argon2';
 import { normalizeArabic, UserRole } from '@wirdi/shared';
+import { SEED_LOGINS, SEED_PASSWORD } from './seed.constants';
 
 const seedTimezones = [
   'Africa/Cairo',
@@ -18,7 +19,7 @@ export const seedAppUser = async (phone: string, role: UserRole) => {
     name,
     nameNormalized: normalizedName,
     role,
-    password: await argon.hash('12345678'),
+    password: await argon.hash(SEED_PASSWORD),
     phone,
     timezone: faker.helpers.arrayElement(seedTimezones),
     notes: faker.datatype.boolean(0.2) ? fakerAR.lorem.sentence() : null,
@@ -44,8 +45,8 @@ function buildLearners(totalLearners: number, passwordHash: string, startOffset:
 async function buildStaffUsers(totalModerators: number) {
   return Promise.all([
     seedAppUser('+201032758989', 'ADMIN'),
-    seedAppUser('+201507770400', 'ADMIN'),
-    seedAppUser('+966500000001', 'MODERATOR'),
+    seedAppUser(SEED_LOGINS.ADMIN, 'ADMIN'),
+    seedAppUser(SEED_LOGINS.MODERATOR, 'MODERATOR'),
     ...Array.from({ length: totalModerators - 1 }, (_, index) =>
       seedAppUser(`+9665${String(index + 2).padStart(8, '0')}`, 'MODERATOR')
     ),
@@ -57,7 +58,7 @@ export async function seedUsers(args: {
   totalModerators: number;
   totalLearners: number;
 }): Promise<{ students: { id: string }[] }> {
-  const defaultPassword = await argon.hash('12345678');
+  const defaultPassword = await argon.hash(SEED_PASSWORD);
 
   const staffUsers = await buildStaffUsers(args.totalModerators);
   // Learners start after all moderators: +966500000001..00{totalModerators}

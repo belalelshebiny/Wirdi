@@ -39,7 +39,8 @@ import { RequestModule } from './modules/request/request.module';
         limit: 100, // 100 requests per minute
       },
     ]),
-    ScheduleModule.forRoot(),
+    // Crons must not fire during tests; they would mutate the shared test database.
+    ...(process.env.NODE_ENV === 'test' ? [] : [ScheduleModule.forRoot()]),
     DatabaseModule,
     AuthModule,
     UserModule,

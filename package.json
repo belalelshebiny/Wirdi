@@ -15,7 +15,8 @@
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "test": "turbo test"
   },
   "devDependencies": {
     "husky": "^9.1.7",

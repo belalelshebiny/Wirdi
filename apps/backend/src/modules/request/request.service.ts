@@ -80,7 +80,7 @@ export class RequestService {
         studentId,
         groupId,
         type,
-        payload: payload as Prisma.InputJsonValue,
+        payload: payload,
         status: 'PENDING',
       },
       include: {

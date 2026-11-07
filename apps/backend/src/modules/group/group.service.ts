@@ -78,8 +78,7 @@ export class GroupService {
       },
     });
     if (studentId) {
-      const g = group as typeof group & { members: { id: string }[] };
-      if (!g.members.length) throw new ForbiddenException('لا تملك صلاحية الوصول لهذه الحلقة');
+      if (!group.members.length) throw new ForbiddenException('لا تملك صلاحية الوصول لهذه الحلقة');
     }
     return this.toGroupDto(group);
   }
